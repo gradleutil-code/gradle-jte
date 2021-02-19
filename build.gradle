@@ -1,0 +1,68 @@
+plugins {
+    id 'groovy-gradle-plugin'
+    id 'maven-publish'
+    id 'com.gradle.plugin-publish' version '0.12.0'
+}
+
+version = project.version != 'unspecified' ? project.version : file('VERSION').text.trim()
+group = 'net.gradleutil'
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
+dependencies {
+    implementation('gg.jte:jte:1.6.0')
+    implementation('gg.jte:jte-runtime:1.6.0')
+}
+
+javadoc {
+    failOnError = false
+}
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+pluginBundle {
+    website = 'https://github.com/gradleutil/gradle-jte'
+    vcsUrl = 'https://github.com/gradleutil/gradle-jte'
+    description = 'Precompile all jte templates to Java classes during gradle build'
+    tags = ['templates','jte']
+}
+
+gradlePlugin {
+    plugins {
+        gradleconf {
+            id = 'net.gradleutil.gradle-jte'
+            displayName = 'gradleutil jte gradle plugin'
+            description = 'Precompile all jte templates to Java classes during gradle build'
+            implementationClass = 'net.gradleutil.gradle.JteGradle'
+        }
+    }
+}
+
+tasks.withType(AbstractPublishToMaven) { publishTask ->
+    def printInfo = { AbstractPublishToMaven task, String repoPath ->
+        task.publication.with { p ->
+            def sb = new StringBuilder()
+            p.artifacts.each {
+                String artifactPath = p.groupId.replace(".", "/") + "/" + p.artifactId + "/" + p.version + "/"
+                sb.append('\n  ' + repoPath).append(artifactPath)
+                        .append(p.artifactId).append('-' + p.version)
+                        .append(it.classifier ? '-' + it.classifier : '').append('.' + it.extension)
+            }
+            logger.lifecycle("Published ${p.groupId}:${p.artifactId}:${p.version}${sb.toString()}")
+        }
+    }
+    doLast {
+        if (publishTask instanceof PublishToMavenRepository) {
+            printInfo(publishTask, publishTask.repository.url.toString())
+        } else {
+            String repoPath = repositories.mavenLocal().url.toURL().getFile()
+            printInfo(publishTask, repoPath)
+        }
+    }
+}
