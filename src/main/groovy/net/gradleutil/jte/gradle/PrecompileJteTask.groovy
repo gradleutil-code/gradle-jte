@@ -53,6 +53,14 @@ class PrecompileJteTask extends JteTaskBase {
         long start = System.nanoTime()
 
         logger.info("Precompiling jte templates found in " + sourceDirectory)
+        File tempDir = File.createTempDir().tap { deleteOnExit() }
+        new AntBuilder().copy(todir: tempDir, verbose:false, quiet:true) {
+            fileset(dir: sourceDirectory.toFile()) { exclude(name: "**/tag") }
+        }
+        new AntBuilder().copy(todir: new File(tempDir, "tag"), flatten: true, verbose:false, quiet:true) {
+            fileset(dir: sourceDirectory.toFile()) { include(name: "**/tag/**") }
+        }
+        sourceDirectory = tempDir.toPath()
 
         TemplateEngine templateEngine = TemplateEngine.create(new DirectoryCodeResolver(sourceDirectory), targetDirectory, contentType)
         templateEngine.setTrimControlStructures(Boolean.TRUE.equals(trimControlStructures))
@@ -62,14 +70,14 @@ class PrecompileJteTask extends JteTaskBase {
             templateEngine.setHtmlPolicy(createHtmlPolicy(htmlPolicyClass))
         }
         templateEngine.setHtmlCommentsPreserved(Boolean.TRUE.equals(htmlCommentsPreserved))
-//        templateEngine.setBinaryStaticContent(Boolean.TRUE.equals(binaryStaticContent));
+        templateEngine.setBinaryStaticContent(Boolean.TRUE.equals(binaryStaticContent))
         templateEngine.setCompileArgs(compileArgs)
 
         int amount
         try {
             templateEngine.cleanAll()
             List<String> compilePathFiles = compilePath.collect { it.absolutePath }
-            amount = templateEngine.precompileAll(compilePathFiles)
+            amount = templateEngine.precompileAll(compilePathFiles).size()
         } catch (Exception e) {
             logger.error("Failed to precompile templates.", e)
             throw e

@@ -8,13 +8,14 @@ version = project.version != 'unspecified' ? project.version : file('VERSION').t
 group = 'net.gradleutil'
 
 repositories {
-    mavenCentral()
     mavenLocal()
+    mavenCentral()
 }
 
 dependencies {
-    implementation('gg.jte:jte:1.6.0')
-    implementation('gg.jte:jte-runtime:1.6.0')
+    implementation('gg.jte:jte:1.11.1')
+    implementation('gg.jte:jte-runtime:1.11.1')
+    implementation('net.gradleutil:conf:1.0.8-SNAPSHOT')
 }
 
 javadoc {
@@ -24,6 +25,15 @@ javadoc {
 java {
     withJavadocJar()
     withSourcesJar()
+}
+
+mhfModel {
+    plugin {
+        mhf = file('src/main/mhf/plugin.mhf')
+        modelName = 'JteGradlePlugin'
+        packageName = 'net.gradleutil.jte'
+        outputDir = file('src/main/groovy/net/gradleutil/jte/plugin')
+    }
 }
 
 pluginBundle {
@@ -39,7 +49,7 @@ gradlePlugin {
             id = 'net.gradleutil.gradle-jte'
             displayName = 'gradleutil jte gradle plugin'
             description = 'Precompile all jte templates to Java classes during gradle build'
-            implementationClass = 'net.gradleutil.gradle.JteGradle'
+            implementationClass = 'net.gradleutil.jte.gradle.JteGradle'
         }
     }
 }
