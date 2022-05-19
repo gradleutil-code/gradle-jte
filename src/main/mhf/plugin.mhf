@@ -1,0 +1,40 @@
+plugin = {
+
+  description = "myplugin"
+  id = "my.gradle.plugin.id"
+  implementationClass = "my.gradle.Plugin"
+
+  extension {
+    jte {
+      sourceDirectory = "/path"
+      targetDirectory = "/path"
+      contentType = "Plain"
+      trimControlStructures = true
+      htmlTags = [""]
+      htmlAttributes = [""]
+      htmlCommentsPreserved = true
+      binaryStaticContent = false
+    }
+  }
+
+  tasks = [
+    {
+      Task {
+        name = "PrecompileJteTask"
+        type = "DefaultTask"
+      }
+    }
+
+  ]
+
+  pluginProperties = [
+    {
+      PluginProperty {
+        name = "myProperty"
+        type = "mypropType"
+      }
+    }
+  ]
+
+
+}
