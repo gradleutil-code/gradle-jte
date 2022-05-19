@@ -8,14 +8,15 @@ version = project.version != 'unspecified' ? project.version : file('VERSION').t
 group = 'net.gradleutil'
 
 repositories {
+    maven { url "https://jitpack.io" }
     mavenLocal()
     mavenCentral()
 }
 
 dependencies {
-    implementation('gg.jte:jte:1.11.1')
-    implementation('gg.jte:jte-runtime:1.11.1')
-    implementation('net.gradleutil:conf:1.0.8-SNAPSHOT')
+    implementation('gg.jte:jte:2.0.3')
+    implementation('gg.jte:jte-runtime:2.0.3')
+    implementation('net.gradleutil:conf:1.0.9')
 }
 
 javadoc {
