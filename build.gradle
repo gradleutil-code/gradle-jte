@@ -41,7 +41,7 @@ pluginBundle {
     website = 'https://github.com/gradleutil/gradle-jte'
     vcsUrl = 'https://github.com/gradleutil/gradle-jte'
     description = 'Precompile all jte templates to Java classes during gradle build'
-    tags = ['templates','jte']
+    tags = ['templates', 'jte']
 }
 
 gradlePlugin {
@@ -53,6 +53,42 @@ gradlePlugin {
             implementationClass = 'net.gradleutil.jte.gradle.JteGradle'
         }
     }
+}
+
+
+testing {
+    suites {
+        test {
+            useSpock('2.0-groovy-3.0')
+        }
+        testPlugin(JvmTestSuite) {
+            useSpock('2.0-groovy-3.0')
+            dependencies {
+                implementation project
+            }
+
+            targets {
+                all {
+                    testTask.configure { shouldRunAfter(test) }
+                }
+            }
+        }
+    }
+}
+
+gradlePlugin.testSourceSets(sourceSets.testPlugin)
+
+
+tasks.named('check') { task -> // Include testFunctionality as part of the check lifecycle
+    task.dependsOn(testing.suites.testPlugin)
+}
+
+tasks.withType(Test) {
+    group = 'tests'
+    testLogging { it.events "passed", "skipped", "failed" }
+    testLogging.showStandardStreams = true
+    testLogging.showCauses = true
+    testLogging.exceptionFormat('full')
 }
 
 tasks.withType(AbstractPublishToMaven) { publishTask ->

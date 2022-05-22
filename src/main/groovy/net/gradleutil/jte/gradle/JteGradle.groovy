@@ -10,7 +10,7 @@ class JteGradle implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
-        project.getTasks().register("precompileJte", PrecompileJteTask.class)
+        precompileJte = project.getTasks().register("precompileJte", PrecompileJteTask.class)
         project.getTasks().register("generateJte", GenerateJteTask.class)
     }
 }

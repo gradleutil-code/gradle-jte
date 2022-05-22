@@ -6,13 +6,14 @@ import org.gradle.api.logging.Logger
 import org.gradle.api.tasks.SourceTask
 import org.gradle.api.tasks.TaskAction
 
+import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
 
-class GenerateJteTask extends JteTaskBase {
+abstract class GenerateJteTask extends JteTaskBase {
 
     GenerateJteTask() {
-        targetDirectory = Paths.get(getProject().getBuildDir().getAbsolutePath(), "generated-sources", "jte")
+        targetDirectory.convention(project.layout.buildDirectory.dir("generated-sources/jte"))
     }
 
     @TaskAction
@@ -22,7 +23,9 @@ class GenerateJteTask extends JteTaskBase {
 
         logger.info("Generating jte templates found in " + sourceDirectory)
 
-        TemplateEngine templateEngine = TemplateEngine.create(new DirectoryCodeResolver(sourceDirectory), targetDirectory, contentType)
+        Path sourcePath = sourceDirectory.toAbsolutePath()
+        Path targetPath = targetDirectory.toAbsolutePath()
+        TemplateEngine templateEngine = TemplateEngine.create(new DirectoryCodeResolver(sourcePath), targetPath, contentType.get())
         templateEngine.setTrimControlStructures(Boolean.TRUE == trimControlStructures)
         templateEngine.setHtmlTags(htmlTags)
         templateEngine.setHtmlAttributes(htmlAttributes)
@@ -32,7 +35,7 @@ class GenerateJteTask extends JteTaskBase {
         int amount
         try {
             templateEngine.cleanAll()
-            amount = templateEngine.generateAll()
+            amount = templateEngine.generateAll().size()
         } catch (Exception e) {
             logger.error("Failed to generate templates.", e)
 

@@ -1,100 +1,65 @@
-package net.gradleutil.jte.gradle;
+package net.gradleutil.jte.gradle
 
-import gg.jte.ContentType;
-import org.gradle.api.DefaultTask;
-import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputDirectory;
-import org.gradle.api.tasks.Optional;
-import org.gradle.api.tasks.OutputDirectory;
+import gg.jte.ContentType
+import org.gradle.api.DefaultTask
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.OutputDirectory
 
-import java.nio.file.Path;
+abstract class JteTaskBase extends DefaultTask {
 
-public abstract class JteTaskBase extends DefaultTask {
-
-    protected Path sourceDirectory;
-    protected Path targetDirectory;
-    protected ContentType contentType;
-    protected Boolean trimControlStructures;
-    protected String[] htmlTags;
-    protected String[] htmlAttributes;
-    protected Boolean htmlCommentsPreserved;
-    protected Boolean binaryStaticContent;
+    protected String[] htmlTags
+    protected String[] htmlAttributes
 
     @InputDirectory
-    public Path getSourceDirectory() {
-        return sourceDirectory;
-    }
-
-    public void setSourceDirectory(Path value) {
-        sourceDirectory = value;
-    }
+    abstract DirectoryProperty getSourceDirectory();
 
     @OutputDirectory
     @Optional
-    public Path getTargetDirectory() {
-        return targetDirectory;
-    }
-
-    public void setTargetDirectory(Path value) {
-        targetDirectory = value;
-    }
+    abstract DirectoryProperty getTargetDirectory()
 
     @Input
-    public ContentType getContentType() {
-        return contentType;
+    abstract Property<ContentType> getContentType()
+
+    @Input
+    @Optional
+    abstract Property<Boolean> getTrimControlStructures();
+
+    @Input
+    @Optional
+    String[] getHtmlTags() {
+        return htmlTags
     }
 
-    public void setContentType(ContentType value) {
-        contentType = value;
+    void setHtmlTags(String[] value) {
+        htmlTags = value
     }
 
     @Input
     @Optional
-    public Boolean getTrimControlStructures() {
-        return trimControlStructures;
+    String[] getHtmlAttributes() {
+        return htmlAttributes
     }
 
-    public void setTrimControlStructures(Boolean value) {
-        trimControlStructures = value;
-    }
-
-    @Input
-    @Optional
-    public String[] getHtmlTags() {
-        return htmlTags;
-    }
-
-    public void setHtmlTags(String[] value) {
-        htmlTags = value;
+    void setHtmlAttributes(String[] value) {
+        htmlAttributes = value
     }
 
     @Input
     @Optional
-    public String[] getHtmlAttributes() {
-        return htmlAttributes;
-    }
+    abstract Property<Boolean> getHtmlCommentsPreserved()
 
-    public void setHtmlAttributes(String[] value) {
-        htmlAttributes = value;
-    }
 
     @Input
     @Optional
-    public Boolean getHtmlCommentsPreserved() {
-        return htmlCommentsPreserved;
+    abstract Property<Boolean> getBinaryStaticContent()
+    
+    JteTaskBase(){
+        contentType.convention(ContentType.Plain)
+        trimControlStructures.convention(false)
     }
 
-    public void setHtmlCommentsPreserved(Boolean value) {
-        htmlCommentsPreserved = value;
-    }
-
-    public void setBinaryStaticContent(Boolean binaryStaticContent) {
-        this.binaryStaticContent = binaryStaticContent;
-    }
-
-    @Input
-    @Optional
-    public Boolean getBinaryStaticContent() {
-        return binaryStaticContent;
-    }
 }

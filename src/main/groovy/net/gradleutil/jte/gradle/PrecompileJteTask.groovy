@@ -1,41 +1,35 @@
 package net.gradleutil.jte.gradle
 
+
 import gg.jte.TemplateEngine
 import gg.jte.html.HtmlPolicy
 import gg.jte.resolve.DirectoryCodeResolver
+import org.gradle.api.Project
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileCollection
 import org.gradle.api.logging.Logger
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.Nested
-import org.gradle.api.tasks.Optional
-import org.gradle.api.tasks.TaskAction
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.*
 
+import javax.inject.Inject
+import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 
-class PrecompileJteTask extends JteTaskBase {
+abstract class PrecompileJteTask extends JteTaskBase {
 
-    private FileCollection compilePath
     private String htmlPolicyClass
     private String[] compileArgs
 
-    @Nested
-    FileCollection getCompilePath() {
-        return compilePath
-    }
-
-    void setCompilePath(FileCollection compilePath) {
-        this.compilePath = compilePath
-    }
+    @InputDirectory
+    abstract DirectoryProperty getTempDir()
 
     @Input
     @Optional
-    String getHtmlPolicyClass() {
-        return htmlPolicyClass
-    }
+    abstract Property<FileCollection> getCompilePath()
 
-    void setHtmlPolicyClass(String htmlPolicyClass) {
-        this.htmlPolicyClass = htmlPolicyClass
-    }
+    @Input
+    @Optional
+    abstract Property<String> getHtmlPolicyClass()
 
     @Input
     @Optional
@@ -47,37 +41,47 @@ class PrecompileJteTask extends JteTaskBase {
         this.compileArgs = compileArgs
     }
 
+    @Inject
+    PrecompileJteTask(Project project) {
+        tempDir.convention(project.layout.buildDirectory.dir('jteFiles'))
+        dependsOn project.tasks.register('copyAllButTags', Copy) {
+            from sourceDirectory
+            into tempDir.get().asFile.path
+            exclude("**/tag")
+        }
+        dependsOn project.tasks.register('copyTags', Copy) {
+            from project.fileTree(sourceDirectory).include("**/tag/*").files
+            into tempDir.get().asFile.path + '/tag'
+        }
+    }
+
     @TaskAction
     void execute() {
         Logger logger = getLogger()
         long start = System.nanoTime()
 
-        logger.info("Precompiling jte templates found in " + sourceDirectory)
-        File tempDir = File.createTempDir().tap { deleteOnExit() }
-        new AntBuilder().copy(todir: tempDir, verbose:false, quiet:true) {
-            fileset(dir: sourceDirectory.toFile()) { exclude(name: "**/tag") }
-        }
-        new AntBuilder().copy(todir: new File(tempDir, "tag"), flatten: true, verbose:false, quiet:true) {
-            fileset(dir: sourceDirectory.toFile()) { include(name: "**/tag/**") }
-        }
-        sourceDirectory = tempDir.toPath()
+        logger.info("Precompiling jte templates found in " + sourceDirectory.asFile.get())
 
-        TemplateEngine templateEngine = TemplateEngine.create(new DirectoryCodeResolver(sourceDirectory), targetDirectory, contentType)
-        templateEngine.setTrimControlStructures(Boolean.TRUE.equals(trimControlStructures))
+        Path targetPath = targetDirectory.asFile.get().toPath()
+        tempDir.getAsFile().get().deleteOnExit()
+        Path sourcePath = tempDir.get().asFile.toPath()
+        TemplateEngine templateEngine = TemplateEngine.create(new DirectoryCodeResolver(sourcePath), targetPath, contentType.get())
+        templateEngine.setTrimControlStructures(trimControlStructures.get())
         templateEngine.setHtmlTags(htmlTags)
         templateEngine.setHtmlAttributes(htmlAttributes)
         if (htmlPolicyClass != null) {
             templateEngine.setHtmlPolicy(createHtmlPolicy(htmlPolicyClass))
         }
-        templateEngine.setHtmlCommentsPreserved(Boolean.TRUE.equals(htmlCommentsPreserved))
-        templateEngine.setBinaryStaticContent(Boolean.TRUE.equals(binaryStaticContent))
+        templateEngine.setHtmlCommentsPreserved(htmlCommentsPreserved.getOrElse(true))
+        templateEngine.setBinaryStaticContent(binaryStaticContent.getOrElse(true))
         templateEngine.setCompileArgs(compileArgs)
 
         int amount
         try {
             templateEngine.cleanAll()
-            List<String> compilePathFiles = compilePath.collect { it.absolutePath }
-            amount = templateEngine.precompileAll(compilePathFiles).size()
+            List<String> compilePathFiles = compilePath.getOrNull()?.collect { it.absolutePath }
+            def files = templateEngine.precompileAll(compilePathFiles)
+            amount = files.size()
         } catch (Exception e) {
             logger.error("Failed to precompile templates.", e)
             throw e
@@ -99,7 +103,7 @@ class PrecompileJteTask extends JteTaskBase {
     }
 
     private URLClassLoader createProjectClassLoader() throws IOException {
-        List<File> files = new ArrayList<>(compilePath.getFiles())
+        List<File> files = new ArrayList<>(compilePath.get().getFiles())
 
         URL[] runtimeUrls = new URL[files.size()]
         for (int i = 0; i < files.size(); i++) {
