@@ -16,7 +16,7 @@ repositories {
 dependencies {
     implementation('gg.jte:jte:2.0.3')
     implementation('gg.jte:jte-runtime:2.0.3')
-    implementation('net.gradleutil:conf:1.0.9')
+    implementation('net.gradleutil:conf-gen:1.1.0')
 }
 
 javadoc {
